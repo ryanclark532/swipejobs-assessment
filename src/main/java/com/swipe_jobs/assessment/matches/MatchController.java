@@ -11,17 +11,15 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Comparator;
 import java.util.List;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @RestController
 public class MatchController {
 
-    record MatchWeights(float location, float certificates, float driversLicense) {}
-
-    final MatchWeights weights = new MatchWeights(1.0f, 1.0f, 1.0f);
-
     @GetMapping("/matches")
     public List<Job> matches(@RequestParam(value = "workerId") String workerId) {
-        var worker = Worker.loadPeople().stream()
+        Worker worker = Worker.loadPeople().stream()
                 .filter(p -> p.userId == Integer.parseInt(workerId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Worker not found"));
@@ -30,19 +28,24 @@ public class MatchController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Worker is not active");
         }
 
-        var jobs = Job.loadJobs().stream()
-                .map(job -> {
-                    float score = 0;
-                    if (job.checkDriversLicense(worker)) score+= weights.driversLicense;
-                    if (job.checkLocations(worker)) score+= weights.location;
-                    if (job.hasCertificates(worker)) score+= weights.certificates;
+        float maxScore = Arrays.stream(MatchCondition.values())
+                .map(MatchCondition::getWeight)
+                .reduce(Float::sum)
+                .orElse(1.0f);
 
-                    int numChecks = MatchWeights.class.getRecordComponents().length;
-                    job.score = (score / numChecks) * 100;
+        return Job.loadJobs().stream()
+                .map(job -> {
+                    float score = Arrays.stream(MatchCondition.values())
+                            .map(condition -> condition.apply(worker, job) * condition.getWeight())
+                            .reduce(Float::sum)
+                            .orElse(0.0f);
+
+
+                    job.score = Math.round((score / maxScore) * 100);
                     return job;
                 })
-                .sorted(Comparator.comparingDouble((Job job) -> job.score).reversed()).toList();
-
-        return jobs.subList(0, Math.min(3, jobs.size()));
+                .sorted(Comparator.comparingDouble(job -> -job.score))
+                .limit(3)
+                .collect(Collectors.toList());
     }
 }

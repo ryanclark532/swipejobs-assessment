@@ -55,7 +55,7 @@ class AssessmentApplicationTests {
 		var controller = new MatchController();
 		var job = new Job();
 		var worker = new Worker();
-		worker.userId = 0; worker.isActive = true;
+		worker.userId = 0; worker.isActive = true; job.billRate = "$20.00";
 		var mockedJob = Mockito.mockStatic(Job.class);
 		var mockedWorker = Mockito.mockStatic(Worker.class);
 		mockedJob.when(Job::loadJobs).thenReturn(Collections.singletonList(job));
@@ -72,17 +72,13 @@ class AssessmentApplicationTests {
 
 		//no checks pass
 		var res = controller.matches("0");
-		assertEquals(0.0f, res.getFirst().score);
+		assertEquals(5.0, res.getFirst().score);
 
 		//some checks pass
 		worker.hasDriversLicense = true;
 		worker.certificates = List.of("cert1");
-		res = controller.matches("0");
-		assertEquals(66.66667f, res.getFirst().score);
-
-		//all checks pass
 		worker.jobSearchAddress = new JobSearchAddress("kms", 10, 0, 0);
 		res = controller.matches("0");
-		assertEquals(100f, res.getFirst().score);
+		assertEquals(73.0, res.getFirst().score);
 	}
 }

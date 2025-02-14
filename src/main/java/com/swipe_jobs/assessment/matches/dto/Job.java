@@ -1,6 +1,5 @@
 package com.swipe_jobs.assessment.matches.dto;
 
-import com.swipe_jobs.assessment.matches.DistanceCalculator;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -32,11 +31,6 @@ public class Job {
             return true;
         }
         return worker.hasDriversLicense;
-    }
-
-    public boolean checkLocations(Worker worker) {
-        double distance = DistanceCalculator.calculateDistance(worker.jobSearchAddress.latitude, worker.jobSearchAddress.longitude, this.location.latitude, this.location.longitude);
-        return distance <= worker.jobSearchAddress.maxJobDistance;
     }
 
     public static List<Job> loadJobs() {

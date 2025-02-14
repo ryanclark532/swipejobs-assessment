@@ -1,4 +1,4 @@
-﻿package com.swipe_jobs.assessment.matches.dto;
+package com.swipe_jobs.assessment.matches.dto;
 
 public class Name {
     public String last;
